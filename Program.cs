@@ -199,6 +199,5 @@ app.MapGet("/", () => Results.Ok(new
     health = "/health"
 })).WithTags("Root").AllowAnonymous();
 
-app.MapGet("/", () => "Hello World!");
 
 app.Run();

@@ -54,6 +54,19 @@ public static class AssuntoEndpoints
             });
     }
 
+    private static async Task<IResult> GetAll(AssuntoService service)
+    {
+        var assuntos = await service.GetAllAsync();
+        return Results.Ok(assuntos);
+    }
+
+    private static async Task<IResult> GetById(int id, AssuntoService service)
+    {
+        var assunto = await service.GetByIdAsync(id);
+        return assunto is not null ? Results.Ok(assunto) : Results.NotFound(new { message = $"Assunto com ID {id} não encontrado." });
+    }
+
+
     private static async Task<IResult> Create(
         [FromBody] Movimentacao movimentacao,
         MovimentacaoService service,

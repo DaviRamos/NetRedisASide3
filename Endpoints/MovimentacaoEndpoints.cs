@@ -66,4 +66,53 @@ public static class MovimentacaoEndpoints
         return movimentacao is not null ? Results.Ok(movimentacao) : Results.NotFound(new { message = $"Movimentação com ID {id} não encontrada." });
     }
 
-    private static async Task<IResult>
+ private static async Task<IResult> Create(
+        [FromBody] Movimentacao movimentacao,
+        MovimentacaoService service,
+        IValidator<Movimentacao> validator)
+    {
+        var validationResult = await validator.ValidateAsync(movimentacao);
+        if (!validationResult.IsValid)
+        {
+            return Results.ValidationProblem(validationResult.ToDictionary());
+        }
+
+        var created = await service.AddAsync(movimentacao);
+        return Results.Created($"/api/movimentacoes/{created.Id}", created);
+    }
+
+    private static async Task<IResult> Update(
+        int id,
+        [FromBody] Movimentacao movimentacao,
+        MovimentacaoService service,
+        IValidator<Movimentacao> validator)
+    {
+        if (id != movimentacao.Id)
+        {
+            return Results.BadRequest(new { message = "ID da movimentação não corresponde ao ID da URL." });
+        }
+
+        var validationResult = await validator.ValidateAsync(movimentacao);
+        if (!validationResult.IsValid)
+        {
+            return Results.ValidationProblem(validationResult.ToDictionary());
+        }
+
+        try
+        {
+            var updated = await service.UpdateAsync(movimentacao);
+            return Results.Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.NotFound(new { message = ex.Message });
+        }
+    }
+
+    private static async Task<IResult> Delete(int id, MovimentacaoService service)
+    {
+        var deleted = await service.DeleteAsync(id);
+        return deleted ? Results.NoContent() : Results.NotFound(new { message = $"Movimentação com ID {id} não encontrada." });
+    }
+}
+
