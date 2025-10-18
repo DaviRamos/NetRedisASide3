@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "dgSpecHash": "z6gYfyuqFWI=",
-  "success": true,
+  "dgSpecHash": "5q+W7N/nsrk=",
+  "success": false,
   "projectFilePath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
   "expectedPackageFiles": [
     "/home/dramos/.nuget/packages/fluentvalidation/11.10.0/fluentvalidation.11.10.0.nupkg.sha512",
@@ -65,7 +65,41 @@
     "/home/dramos/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
     "/home/dramos/.nuget/packages/system.text.json/9.0.0/system.text.json.9.0.0.nupkg.sha512",
     "/home/dramos/.nuget/packages/system.threading.channels/7.0.0/system.threading.channels.7.0.0.nupkg.sha512",
-    "/home/dramos/.nuget/packages/microsoft.netcore.app.host.linux-x64/9.0.9/microsoft.netcore.app.host.linux-x64.9.0.9.nupkg.sha512"
+    "/home/dramos/.nuget/packages/microsoft.netcore.app.host.linux-x64/9.0.10/microsoft.netcore.app.host.linux-x64.9.0.10.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package AspNetCore.HealthChecks.Redis with version (>= 9.0.1)\n  - Found 29 version(s) in nuget.org [ Nearest version: 9.0.0 ]\n  - Found 0 version(s) in /usr/lib/dotnet/library-packs",
+      "projectPath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
+      "filePath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
+      "libraryId": "AspNetCore.HealthChecks.Redis",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    },
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package AspNetCore.HealthChecks.Npgsql with version (>= 9.0.1)\n  - Found 24 version(s) in nuget.org [ Nearest version: 9.0.0 ]\n  - Found 0 version(s) in /usr/lib/dotnet/library-packs",
+      "projectPath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
+      "filePath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
+      "libraryId": "AspNetCore.HealthChecks.Npgsql",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    },
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package AspNetCore.HealthChecks.Uris with version (>= 9.0.1)\n  - Found 26 version(s) in nuget.org [ Nearest version: 9.0.0 ]\n  - Found 0 version(s) in /usr/lib/dotnet/library-packs",
+      "projectPath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
+      "filePath": "/home/dramos/projetosCompose/NetRedisASide3/NetRedisASide3/NetRedisASide3.csproj",
+      "libraryId": "AspNetCore.HealthChecks.Uris",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    }
+  ]
 }

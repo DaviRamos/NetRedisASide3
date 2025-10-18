@@ -3731,6 +3731,9 @@
   },
   "projectFileDependencyGroups": {
     "net9.0": [
+      "AspNetCore.HealthChecks.Npgsql >= 9.0.1",
+      "AspNetCore.HealthChecks.Redis >= 9.0.1",
+      "AspNetCore.HealthChecks.Uris >= 9.0.1",
       "FluentValidation >= 11.10.0",
       "FluentValidation.DependencyInjectionExtensions >= 11.10.0",
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 9.0.0",
@@ -3787,6 +3790,18 @@
       "net9.0": {
         "targetAlias": "net9.0",
         "dependencies": {
+          "AspNetCore.HealthChecks.Npgsql": {
+            "target": "Package",
+            "version": "[9.0.1, )"
+          },
+          "AspNetCore.HealthChecks.Redis": {
+            "target": "Package",
+            "version": "[9.0.1, )"
+          },
+          "AspNetCore.HealthChecks.Uris": {
+            "target": "Package",
+            "version": "[9.0.1, )"
+          },
           "FluentValidation": {
             "target": "Package",
             "version": "[11.10.0, )"
@@ -3844,7 +3859,7 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.NETCore.App.Host.linux-x64",
-            "version": "[9.0.9, 9.0.9]"
+            "version": "[9.0.10, 9.0.10]"
           }
         ],
         "frameworkReferences": {
@@ -3855,8 +3870,37 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.100-rc.1.25451.107/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.100-rc.2.25502.107/PortableRuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package AspNetCore.HealthChecks.Redis with version (>= 9.0.1)\n  - Found 29 version(s) in nuget.org [ Nearest version: 9.0.0 ]\n  - Found 0 version(s) in /usr/lib/dotnet/library-packs",
+      "libraryId": "AspNetCore.HealthChecks.Redis",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    },
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package AspNetCore.HealthChecks.Npgsql with version (>= 9.0.1)\n  - Found 24 version(s) in nuget.org [ Nearest version: 9.0.0 ]\n  - Found 0 version(s) in /usr/lib/dotnet/library-packs",
+      "libraryId": "AspNetCore.HealthChecks.Npgsql",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    },
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package AspNetCore.HealthChecks.Uris with version (>= 9.0.1)\n  - Found 26 version(s) in nuget.org [ Nearest version: 9.0.0 ]\n  - Found 0 version(s) in /usr/lib/dotnet/library-packs",
+      "libraryId": "AspNetCore.HealthChecks.Uris",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    }
+  ]
 }
