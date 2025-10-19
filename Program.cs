@@ -18,17 +18,19 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 // Configuração do PostgreSQL com User Secrets
-var connectionString = builder.Configuration.GetConnectionString("AssuntoDb");
+var connectionString = builder.Configuration.GetConnectionString("PostgresConnection")
+    ?? throw new InvalidOperationException("Connection string 'PostgresConnection' not found.");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Configuração do Redis (Cache Distribuído)
-var redisConnection = builder.Configuration["Redis:Connection"] ?? "localhost:6379";
+var redisConnection = builder.Configuration["RedisConnection"] ??  throw new InvalidOperationException("Connection string 'RedisConnection' not found.");
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = redisConnection;
     options.InstanceName = "NetRedisASide3:";
 });
+
 
 // Configuração do Keycloak (Autenticação JWT)
 var keycloakSettings = builder.Configuration.GetSection("Keycloak").Get<KeycloakSettings>();
@@ -148,7 +150,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-
+/*
 // Aplicar migrations automaticamente em desenvolvimento
 if (app.Environment.IsDevelopment())
 {
@@ -156,19 +158,18 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 }
+*/
 
-// Middleware Pipeline
-if (app.Environment.IsDevelopment())
+
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "NetRedisASide3 API v1");
-        options.RoutePrefix = "swagger";
-    });
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "NetRedisASide3 API v1");
+    options.RoutePrefix = "swagger";
+});
 
-app.UseHttpsRedirection();
+
+//app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

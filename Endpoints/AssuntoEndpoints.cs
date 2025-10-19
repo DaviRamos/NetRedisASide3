@@ -68,32 +68,32 @@ public static class AssuntoEndpoints
 
 
     private static async Task<IResult> Create(
-        [FromBody] Movimentacao movimentacao,
-        MovimentacaoService service,
-        IValidator<Movimentacao> validator)
+        [FromBody] Assunto assunto,
+        AssuntoService service,
+        IValidator<Assunto> validator)
     {
-        var validationResult = await validator.ValidateAsync(movimentacao);
+        var validationResult = await validator.ValidateAsync(assunto);
         if (!validationResult.IsValid)
         {
             return Results.ValidationProblem(validationResult.ToDictionary());
         }
 
-        var created = await service.AddAsync(movimentacao);
-        return Results.Created($"/api/movimentacoes/{created.Id}", created);
+        var created = await service.AddAsync(assunto);
+        return Results.Created($"/api/assuntos/{created.Id}", created);
     }
 
     private static async Task<IResult> Update(
         int id,
-        [FromBody] Movimentacao movimentacao,
-        MovimentacaoService service,
-        IValidator<Movimentacao> validator)
+        [FromBody] Assunto assunto,
+        AssuntoService service,
+        IValidator<Assunto> validator)
     {
-        if (id != movimentacao.Id)
+        if (id != assunto.Id)
         {
-            return Results.BadRequest(new { message = "ID da movimentação não corresponde ao ID da URL." });
+            return Results.BadRequest(new { message = "ID do assunto não corresponde ao ID da URL." });
         }
 
-        var validationResult = await validator.ValidateAsync(movimentacao);
+        var validationResult = await validator.ValidateAsync(assunto);
         if (!validationResult.IsValid)
         {
             return Results.ValidationProblem(validationResult.ToDictionary());
@@ -101,7 +101,7 @@ public static class AssuntoEndpoints
 
         try
         {
-            var updated = await service.UpdateAsync(movimentacao);
+            var updated = await service.UpdateAsync(assunto);
             return Results.Ok(updated);
         }
         catch (InvalidOperationException ex)
@@ -110,9 +110,9 @@ public static class AssuntoEndpoints
         }
     }
 
-    private static async Task<IResult> Delete(int id, MovimentacaoService service)
+    private static async Task<IResult> Delete(int id, AssuntoService service)
     {
         var deleted = await service.DeleteAsync(id);
-        return deleted ? Results.NoContent() : Results.NotFound(new { message = $"Movimentação com ID {id} não encontrada." });
+        return deleted ? Results.NoContent() : Results.NotFound(new { message = $"Assunto com ID {id} não encontrado." });
     }
 }
