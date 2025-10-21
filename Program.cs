@@ -190,7 +190,7 @@ app.MapAssuntoEndpoints();
 app.MapMovimentacaoEndpoints();
 app.MapTipoDocumentoEndpoints();
 
-// Endpoint raiz
+/*
 app.MapGet("/", () => Results.Ok(new
 {
     application = "NetRedisASide3",
@@ -199,6 +199,9 @@ app.MapGet("/", () => Results.Ok(new
     documentation = "/swagger",
     health = "/health"
 })).WithTags("Root").AllowAnonymous();
+*/
 
+// Endpoint raiz
+app.MapGet("/", () => Results.Redirect("/swagger")).WithTags("Root").AllowAnonymous();
 
 app.Run();
