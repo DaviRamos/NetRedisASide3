@@ -1,0 +1,255 @@
+name: NetRedisASide3
+
+volumes:
+  postgres_data:
+  redis_data:
+  keycloak_data:
+  openwebui_data:
+  ollama_data:
+  weaviate_data:
+
+networks:
+  netredisaside3-network:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-NetRedisASide3-container
+    hostname: postgres    
+    restart: unless-stopped
+    command: postgres -c shared_buffers=256MB -c work_mem=16MB -c maintenance_work_mem=128MB -c effective_cache_size=512MB -c max_connections=100
+    environment:
+       POSTGRES_USER: ${POSTGRES_USER}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+       POSTGRES_DB: ${POSTGRES_DB}
+       POSTGRES_MULTIPLE_DATABASES: keycloak,langflow
+       POSTGRES_PORT: ${POSTGRES_PORT}
+       POSTGRES_LOG_LEVEL: ${POSTGRES_LOG_LEVEL}
+       PGDATA: /var/lib/postgresql/data/pgdata      
+    volumes:
+      - postgres_data:/var/lib/postgresql/data      
+      - ./scripts/create-multiple-databases.sh:/docker-entrypoint-initdb.d/create-multiple-databases.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 50s
+      timeout: 5s
+      retries: 15
+      start_period: 2m
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - netredisaside3-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis-NetRedisASide3-container
+    hostname: redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - netredisaside3-network
+
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak-NetRedisASide3-container
+    hostname: keycloak
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    command:
+      - start-dev
+      - --import-realm
+    volumes:      
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - keycloak_data:/opt/keycloak/data
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 2m
+    #deploy:
+      #resources:
+        #limits:
+          #cpus: '0.50'
+          #memory: 512M
+        #reservations:
+          #cpus: '0.30'
+          #memory: 128M   
+    networks:
+      - netredisaside3-network
+
+  # Ollama AI with GPU support
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-NetRedisASide3-container
+    hostname: ollama
+    ports:
+      - "11434:11434"
+    pull_policy: always
+    tty: true
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:        
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - netredisaside3-network
+
+  ollama-setup:
+    image: ollama/ollama:latest
+    container_name: ollama-setup
+    depends_on:
+     - ollama    
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - netredisaside3-network
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      echo 'Aguardando Ollama estar pronto...' &&
+      sleep 30 &&
+      echo 'Baixando modelo llama3.2:3b...' &&
+      ollama pull llama3.2:3b &&
+      echo 'Baixando modelo all-minilm...' &&
+      ollama pull all-minilm &&      
+      echo 'Baixando modelo mxbai-embed-large:latest...' &&
+      ollama pull mxbai-embed-large:latest &&      
+      echo 'Baixando modelo gpt-oss:20b...' &&
+      ollama pull gpt-oss:20b &&
+      echo 'Baixando modelo phi3:3.8b...' &&
+      ollama pull phi3:3.8b &&
+      echo 'Baixando modelo deepseek-r1:8b...' &&
+      ollama pull deepseek-r1:8b &&
+      echo 'Modelos baixados com sucesso!' &&
+      exit 0
+      "
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    restart: unless-stopped
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/openwebui      
+     # - PORT=${OPENWEBUI_PORT}   
+      - OPENWEBUI_ADMIN_PASSWORD=${OPENWEBUI_ADMIN_PASSWORD}
+      - OPENWEBUI_ADMIN_USERNAME=${OPENWEBUI_ADMIN_USERNAME}               
+      - DEFAULT_USER_EMAIL=${DEFAULT_USER_EMAIL}    
+      - DEFAULT_USER_PASSWORD=${DEFAULT_USER_PASSWORD}
+      - DEFAULT_USER_FIRST_NAME=${DEFAULT_USER_FIRST_NAME}
+      - DEFAULT_USER_LAST_NAME=${DEFAULT_USER_LAST_NAME}
+      - DEFAULT_USER_ROLE=${DEFAULT_USER_ROLE}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - WEBUI_SECRET_KEY:${WEBUI_SECRET_KEY}  
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - openwebui_data:/app/backend/data
+    ports:
+      - "3000:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - netredisaside3-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    #deploy:
+      #resources:
+        #limits:
+          #cpus: '1.00'
+          #memory: 256M
+        #reservations:
+          #cpus: '2.00'
+          #memory: 128M
+
+
+
+  # Weaviate Vector Database
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:latest
+    container_name: weaviateNet-NetRedisASide3-container
+    hostname: weaviate
+    command: ["--host", "0.0.0.0", "--port", "8081","--scheme", "http"] 
+    ports:
+      - "8081:8081"  # REST calls
+      - "50051:50051"  # gRPC calls
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      ENABLE_API_BASED_MODULES: 'true'
+      DEFAULT_VECTORIZER_MODULE: 'text2vec-ollama'
+      ENABLE_MODULES: 'text2vec-ollama,generative-ollama'
+      CLUSTER_HOSTNAME: 'weaviate-node'
+      OLLAMA_APIENDPOINT: 'http://ollama:11434'
+      ASYNC_INDEXING: 'true' 
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    depends_on:
+      - ollama 
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/v1/.well-known/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - netredisaside3-network

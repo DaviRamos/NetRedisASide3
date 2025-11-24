@@ -1,0 +1,423 @@
+# NetRedisASide3 Setup Script para Windows PowerShell
+# Execute: .\SETUP.ps1
+
+param(
+    [switch]$SkipPrerequisites = $false
+)
+
+$ErrorActionPreference = "Stop"
+
+# Cores para output
+function Write-Success {
+    param([string]$Message)
+    Write-Host "✓ $Message" -ForegroundColor Green
+}
+
+function Write-Error-Message {
+    param([string]$Message)
+    Write-Host "✗ $Message" -ForegroundColor Red
+}
+
+function Write-Info {
+    param([string]$Message)
+    Write-Host "ℹ $Message" -ForegroundColor Blue
+}
+
+function Write-Warning-Message {
+    param([string]$Message)
+    Write-Host "⚠ $Message" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "🚀 NetRedisASide3 - Setup Completo" -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Verificar se está executando como Administrador
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Warning-Message "Este script não está sendo executado como Administrador."
+    Write-Info "Algumas operações podem falhar. Considere executar como Administrador."
+    Write-Host ""
+}
+
+# Verificar pré-requisitos
+if (-not $SkipPrerequisites) {
+    Write-Host "Verificando pré-requisitos..." -ForegroundColor Yellow
+    Write-Host ""
+
+    $missingDeps = $false
+
+    # Verificar .NET
+    try {
+        $dotnetVersion = dotnet --version
+        $majorVersion = [int]($dotnetVersion -split '\.')[0]
+        if ($majorVersion -ge 9) {
+            Write-Success ".NET $dotnetVersion instalado"
+        } else {
+            Write-Warning-Message ".NET 9 é recomendado. Versão atual: $dotnetVersion"
+        }
+    } catch {
+        Write-Error-Message ".NET não encontrado"
+        Write-Info "Baixe em: https://dotnet.microsoft.com/download/dotnet/9.0"
+        $missingDeps = $true
+    }
+
+    # Verificar Docker
+    try {
+        $dockerVersion = docker --version
+        Write-Success "Docker instalado: $dockerVersion"
+    } catch {
+        Write-Error-Message "Docker não encontrado"
+        Write-Info "Baixe Docker Desktop em: https://www.docker.com/products/docker-desktop"
+        $missingDeps = $true
+    }
+
+    # Verificar Docker Compose
+    try {
+        $composeVersion = docker-compose --version
+        Write-Success "Docker Compose instalado: $composeVersion"
+    } catch {
+        Write-Error-Message "Docker Compose não encontrado"
+        $missingDeps = $true
+    }
+
+    # Verificar Git
+    try {
+        $gitVersion = git --version
+        Write-Success "Git instalado: $gitVersion"
+    } catch {
+        Write-Error-Message "Git não encontrado"
+        Write-Info "Baixe em: https://git-scm.com/downloads"
+        $missingDeps = $true
+    }
+
+    Write-Host ""
+
+    if ($missingDeps) {
+        Write-Error-Message "Alguns pré-requisitos estão faltando."
+        Write-Host "Instale as dependências e execute o script novamente." -ForegroundColor Yellow
+        exit 1
+    }
+}
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "📁 Criando estrutura de pastas..." -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+$projectName = "NetRedisASide3"
+
+# Criar diretório principal
+if (-not (Test-Path $projectName)) {
+    New-Item -ItemType Directory -Path $projectName | Out-Null
+    Write-Success "Pasta raiz criada: $projectName"
+} else {
+    Write-Info "Pasta $projectName já existe"
+}
+
+Set-Location $projectName
+
+# Criar estrutura de diretórios
+Write-Info "Criando estrutura de diretórios..."
+
+$directories = @(
+    "Models",
+    "Data",
+    "Repositories",
+    "Services",
+    "Validators",
+    "Endpoints",
+    "Configuration",
+    "scripts",
+    "keycloak",
+    "postman",
+    "wwwroot"
+)
+
+foreach ($dir in $directories) {
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir | Out-Null
+    }
+}
+
+Write-Success "Estrutura de diretórios criada"
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "🔧 Criando projeto .NET 9..." -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Criar projeto .NET se não existir
+if (-not (Test-Path "$projectName.csproj")) {
+    dotnet new web -n $projectName -f net9.0
+    if (Test-Path "Program.cs") {
+        Remove-Item "Program.cs" # Vamos criar um customizado
+    }
+    Write-Success "Projeto .NET 9 criado"
+} else {
+    Write-Info "Arquivo .csproj já existe"
+}
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "📦 Instalando pacotes NuGet..." -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Instalar pacotes
+$packages = @{
+    "Microsoft.EntityFrameworkCore" = "9.0.0"
+    "Microsoft.EntityFrameworkCore.Design" = "9.0.0"
+    "Npgsql.EntityFrameworkCore.PostgreSQL" = "9.0.0"
+    "Microsoft.Extensions.Caching.StackExchangeRedis" = "9.0.0"
+    "StackExchange.Redis" = "2.8.16"
+    "Microsoft.AspNetCore.Authentication.JwtBearer" = "9.0.0"
+    "FluentValidation" = "11.10.0"
+    "FluentValidation.DependencyInjectionExtensions" = "11.10.0"
+    "AspNetCore.HealthChecks.Redis" = "9.0.1"
+    "AspNetCore.HealthChecks.Npgsql" = "9.0.1"
+    "AspNetCore.HealthChecks.Uris" = "9.0.1"
+    "Swashbuckle.AspNetCore" = "7.2.0"
+    "Microsoft.AspNetCore.OpenApi" = "9.0.0"
+}
+
+foreach ($package in $packages.GetEnumerator()) {
+    Write-Host "Instalando $($package.Key)..." -NoNewline
+    dotnet add package $package.Key --version $package.Value 2>&1 | Out-Null
+    Write-Host " ✓" -ForegroundColor Green
+}
+
+Write-Success "Pacotes NuGet instalados"
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "📝 Criando arquivos de configuração..." -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Criar .env.example
+$envContent = @"
+# PostgreSQL Admin Credentials
+POSTGRES_ADMIN_USER=postgres
+POSTGRES_ADMIN_PASSWORD=postgres_admin_pass_2025
+
+# Database específico: Assuntos
+ASSUNTO_DB_NAME=assuntos_db
+ASSUNTO_DB_USER=assunto_user
+ASSUNTO_DB_PASSWORD=assunto_pass_secure_2025
+
+# Database específico: Movimentações
+MOVIMENTACAO_DB_NAME=movimentacoes_db
+MOVIMENTACAO_DB_USER=movimentacao_user
+MOVIMENTACAO_DB_PASSWORD=movimentacao_pass_secure_2025
+
+# Database específico: Tipos de Documento
+TIPODOCUMENTO_DB_NAME=tipos_documentos_db
+TIPODOCUMENTO_DB_USER=tipo_doc_user
+TIPODOCUMENTO_DB_PASSWORD=tipo_doc_pass_secure_2025
+
+# Redis
+REDIS_PASSWORD=redis_secure_pass_2025
+
+# Keycloak
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin_keycloak_pass_2025
+KEYCLOAK_REALM=netredisaside3
+KEYCLOAK_CLIENT_ID=netredisaside3-api
+KEYCLOAK_CLIENT_SECRET=your-client-secret-here-change-me
+
+# Ollama
+OLLAMA_HOST=ollama
+OLLAMA_PORT=11434
+
+# Weaviate
+WEAVIATE_HOST=weaviate
+WEAVIATE_PORT=8080
+"@
+
+Set-Content -Path ".env.example" -Value $envContent -Encoding UTF8
+Write-Success "Arquivo .env.example criado"
+
+# Criar .gitignore
+$gitignoreContent = @"
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.userprefs
+*.pidb
+*.vspscc
+
+## Visual Studio
+.vs/
+.vscode/
+*.csproj.user
+*.dbmdl
+
+## Rider
+.idea/
+*.sln.iml
+
+## Environment
+.env
+*.env.local
+.env.production
+
+## User Secrets
+secrets.json
+
+## Backups
+backups/
+*.bak
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Logs
+logs/
+*.log
+
+## Publish
+publish/
+"@
+
+Set-Content -Path ".gitignore" -Value $gitignoreContent -Encoding UTF8
+Write-Success "Arquivo .gitignore criado"
+
+# Criar README.md
+$readmeContent = @"
+# NetRedisASide3
+
+Sistema de Gestão Enterprise com .NET 9
+
+## Início Rápido
+
+``````powershell
+# 1. Configurar variáveis de ambiente
+Copy-Item .env.example .env
+
+# 2. Configurar User Secrets
+.\scripts\setup-secrets.ps1
+
+# 3. Subir infraestrutura
+docker-compose up -d
+
+# 4. Aplicar migrations
+dotnet ef database update
+
+# 5. Executar aplicação
+dotnet run
+``````
+
+## Acesso
+
+- **API**: https://localhost:7001
+- **Swagger**: https://localhost:7001/swagger
+- **Keycloak**: http://localhost:8080
+
+Veja a documentação completa nos arquivos gerados.
+"@
+
+Set-Content -Path "README.md" -Value $readmeContent -Encoding UTF8
+Write-Success "README.md criado"
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "🔨 Criando scripts auxiliares..." -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Script de setup de secrets (PowerShell)
+$secretsScriptContent = @"
+# Script para configurar User Secrets
+
+Write-Host "🔐 Configurando User Secrets..." -ForegroundColor Cyan
+
+dotnet user-secrets init
+
+dotnet user-secrets set "ConnectionStrings:AssuntoDb" "Host=localhost;Port=5432;Database=assuntos_db;Username=assunto_user;Password=assunto_pass_secure_2025"
+
+dotnet user-secrets set "ConnectionStrings:MovimentacaoDb" "Host=localhost;Port=5432;Database=movimentacoes_db;Username=movimentacao_user;Password=movimentacao_pass_secure_2025"
+
+dotnet user-secrets set "ConnectionStrings:TipoDocumentoDb" "Host=localhost;Port=5432;Database=tipos_documentos_db;Username=tipo_doc_user;Password=tipo_doc_pass_secure_2025"
+
+Write-Host "✅ User Secrets configurados!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Para visualizar: dotnet user-secrets list"
+"@
+
+Set-Content -Path "scripts\setup-secrets.ps1" -Value $secretsScriptContent -Encoding UTF8
+Write-Success "Script setup-secrets.ps1 criado"
+
+# Scripts bash já foram cobertos anteriormente
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "✅ Setup Concluído!" -ForegroundColor Green
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Success "Estrutura de pastas criada"
+Write-Success "Projeto .NET 9 configurado"
+Write-Success "Pacotes NuGet instalados"
+Write-Success "Scripts auxiliares criados"
+
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "📋 Próximos Passos:" -ForegroundColor Yellow
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "1. " -NoNewline
+Write-Host "Copiar arquivos de código" -ForegroundColor Blue
+Write-Host "   - Copie os arquivos .cs para as respectivas pastas"
+Write-Host "   - Models/, Repositories/, Services/, etc."
+Write-Host ""
+
+Write-Host "2. " -NoNewline
+Write-Host "Configurar ambiente" -ForegroundColor Blue
+Write-Host "   Copy-Item .env.example .env"
+Write-Host "   .\scripts\setup-secrets.ps1"
+Write-Host ""
+
+Write-Host "3. " -NoNewline
+Write-Host "Criar arquivos restantes" -ForegroundColor Blue
+Write-Host "   - docker-compose.yml"
+Write-Host "   - Dockerfile"
+Write-Host "   - keycloak/realm-export.json"
+Write-Host "   - postman/NetRedisASide3.postman_collection.json"
+Write-Host ""
+
+Write-Host "4. " -NoNewline
+Write-Host "Iniciar desenvolvimento" -ForegroundColor Blue
+Write-Host "   docker-compose up -d"
+Write-Host "   dotnet ef migrations add InitialCreate"
+Write-Host "   dotnet ef database update"
+Write-Host "   dotnet run"
+Write-Host ""
+
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "📁 Estrutura Criada:" -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Mostrar estrutura
+Get-ChildItem -Directory | ForEach-Object {
+    Write-Host "  📁 $($_.Name)" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Success "Setup completo! 🎉"
+Write-Host ""
+Write-Host "Pressione qualquer tecla para sair..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

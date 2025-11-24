@@ -1,0 +1,495 @@
+{
+  "info": {
+    "name": "NetRedisASide3 API",
+    "description": "Collection completa para testar a API NetRedisASide3 com autenticação Keycloak",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "realm",
+      "value": "netredisaside3",
+      "type": "string"
+    },
+    {
+      "key": "client_id",
+      "value": "netredisaside3-api",
+      "type": "string"
+    },
+    {
+      "key": "client_secret",
+      "value": "netredisaside3-secret-change-in-production",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin123",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get Access Token (Password Grant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    console.log('Token saved:', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{client_secret}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": ["{{keycloak_url}}"],
+              "path": ["realms", "{{realm}}", "protocol", "openid-connect", "token"]
+            }
+          }
+        },
+        {
+          "name": "Get Access Token (Client Credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    console.log('Token saved:', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{client_secret}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": ["{{keycloak_url}}"],
+              "path": ["realms", "{{realm}}", "protocol", "openid-connect", "token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assuntos",
+      "item": [
+        {
+          "name": "List All Assuntos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assuntos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assuntos"]
+            }
+          }
+        },
+        {
+          "name": "Get Assunto By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assuntos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assuntos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Assunto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Arquitetura de Software\",\n  \"descricao\": \"Padrões e práticas de arquitetura de software empresarial com foco em Clean Architecture e DDD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/assuntos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assuntos"]
+            }
+          }
+        },
+        {
+          "name": "Update Assunto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"nome\": \"Arquitetura de Software Atualizado\",\n  \"descricao\": \"Descrição atualizada sobre arquitetura de software\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/assuntos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assuntos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Assunto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assuntos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assuntos", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movimentações",
+      "item": [
+        {
+          "name": "List All Movimentacoes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/movimentacoes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimentacoes"]
+            }
+          }
+        },
+        {
+          "name": "Get Movimentacao By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/movimentacoes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimentacoes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Movimentacao",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Transferência Interna\",\n  \"descricao\": \"Movimentação de recursos entre departamentos do setor financeiro\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/movimentacoes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimentacoes"]
+            }
+          }
+        },
+        {
+          "name": "Update Movimentacao",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"nome\": \"Transferência Interna Atualizada\",\n  \"descricao\": \"Descrição atualizada da movimentação\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/movimentacoes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimentacoes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Movimentacao",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/movimentacoes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimentacoes", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tipos de Documento",
+      "item": [
+        {
+          "name": "List All Tipos Documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tipos-documento",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tipos-documento"]
+            }
+          }
+        },
+        {
+          "name": "Get Tipo Documento By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tipos-documento/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tipos-documento", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Tipo Documento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Nota Fiscal Eletrônica\",\n  \"descricao\": \"Documento fiscal eletrônico modelo 55 (NF-e)\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tipos-documento",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tipos-documento"]
+            }
+          }
+        },
+        {
+          "name": "Update Tipo Documento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"nome\": \"Nota Fiscal Eletrônica Atualizada\",\n  \"descricao\": \"Descrição atualizada do tipo de documento\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tipos-documento/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tipos-documento", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Tipo Documento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tipos-documento/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tipos-documento", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Health Check Ready",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/ready",
+              "host": ["{{base_url}}"],
+              "path": ["health", "ready"]
+            }
+          }
+        },
+        {
+          "name": "Health Check Live",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/live",
+              "host": ["{{base_url}}"],
+              "path": ["health", "live"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Root",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        }
+      }
+    }
+  ]
+}

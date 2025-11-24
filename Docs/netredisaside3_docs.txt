@@ -1,0 +1,604 @@
+# NetRedisASide3 - Sistema de Gestão com Cache Distribuído
+
+## Visão Geral
+
+Aplicação .NET 9 enterprise-grade com arquitetura moderna, implementando cache distribuído (Redis), banco de dados PostgreSQL, autenticação via Keycloak, e integração com IA através do Ollama e banco vetorial Weaviate.
+
+## Arquitetura
+
+### Stack Tecnológico
+
+- **.NET 9** - Framework principal
+- **PostgreSQL** - Banco de dados relacional
+- **Redis** - Cache distribuído (IDistributedCache)
+- **Keycloak** - Identity Provider (OAuth 2.0/OpenID Connect)
+- **Ollama** - Modelos de IA com suporte GPU NVIDIA
+- **Weaviate** - Banco de dados vetorial
+- **Docker & Docker Compose** - Containerização
+
+### Padrões Implementados
+
+- **Repository Pattern** - Abstração de acesso a dados
+- **Service Layer** - Lógica de negócio
+- **Minimal APIs** - Endpoints HTTP leves e performáticos
+- **FluentValidation** - Validação robusta de dados
+- **Health Checks** - Monitoramento de serviços
+- **Secrets Management** - Proteção de credenciais sensíveis
+
+## Estrutura do Projeto
+
+```
+NetRedisASide3/
+├── Models/
+│   ├── Assunto.cs
+│   ├── Movimentacao.cs
+│   └── TipoDocumento.cs
+├── Data/
+│   └── AppDbContext.cs
+├── Repositories/
+│   ├── IRepository.cs
+│   ├── AssuntoRepository.cs
+│   ├── MovimentacaoRepository.cs
+│   └── TipoDocumentoRepository.cs
+├── Services/
+│   ├── AssuntoService.cs
+│   ├── MovimentacaoService.cs
+│   └── TipoDocumentoService.cs
+├── Validators/
+│   ├── AssuntoValidator.cs
+│   ├── MovimentacaoValidator.cs
+│   └── TipoDocumentoValidator.cs
+├── Endpoints/
+│   ├── AssuntoEndpoints.cs
+│   ├── MovimentacaoEndpoints.cs
+│   └── TipoDocumentoEndpoints.cs
+├── Configuration/
+│   └── KeycloakSettings.cs
+├── docker-compose.yml
+├── .env
+├── Dockerfile
+├── appsettings.json
+├── secrets.json (User Secrets)
+└── scripts/
+    ├── create-databases.sh
+    ├── import-keycloak-realm.sh
+    └── download-ollama-models.sh
+```
+
+## Modelos de Domínio
+
+### Assunto
+Representa categorias ou tópicos do sistema.
+
+**Propriedades:**
+- `Id` (int) - Identificador único
+- `Nome` (string) - Nome do assunto
+- `Descricao` (string) - Descrição detalhada
+- `DataCriacao` (DateTime) - Timestamp de criação
+- `DataAtualizacao` (DateTime) - Timestamp da última atualização
+
+### Movimentacao
+Registra movimentações ou transações no sistema.
+
+**Propriedades:**
+- `Id` (int) - Identificador único
+- `Nome` (string) - Nome da movimentação
+- `Descricao` (string) - Descrição detalhada
+- `DataCriacao` (DateTime) - Timestamp de criação
+- `DataAtualizacao` (DateTime) - Timestamp da última atualização
+
+### TipoDocumento
+Define tipos de documentos aceitos no sistema.
+
+**Propriedades:**
+- `Id` (int) - Identificador único
+- `Nome` (string) - Nome do tipo
+- `Descricao` (string) - Descrição detalhada
+- `DataCriacao` (DateTime) - Timestamp de criação
+- `DataAtualizacao` (DateTime) - Timestamp da última atualização
+
+## Configuração do Ambiente
+
+### Pré-requisitos
+
+- Docker Desktop com suporte a containers Linux
+- Docker Compose
+- .NET 9 SDK
+- NVIDIA Docker (para suporte GPU no Ollama)
+- Git
+
+### Variáveis de Ambiente (.env)
+
+```env
+# PostgreSQL
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_ADMIN_USER=postgres
+POSTGRES_ADMIN_PASSWORD=postgres_admin_pass
+
+# Databases específicos
+ASSUNTO_DB_NAME=assuntos_db
+ASSUNTO_DB_USER=assunto_user
+ASSUNTO_DB_PASSWORD=assunto_pass
+
+MOVIMENTACAO_DB_NAME=movimentacoes_db
+MOVIMENTACAO_DB_USER=movimentacao_user
+MOVIMENTACAO_DB_PASSWORD=movimentacao_pass
+
+TIPODOCUMENTO_DB_NAME=tipos_documentos_db
+TIPODOCUMENTO_DB_USER=tipo_doc_user
+TIPODOCUMENTO_DB_PASSWORD=tipo_doc_pass
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=redis_secure_pass
+
+# Keycloak
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin_keycloak_pass
+KEYCLOAK_REALM=netredisaside3
+KEYCLOAK_CLIENT_ID=netredisaside3-api
+KEYCLOAK_CLIENT_SECRET=your-client-secret-here
+
+# Ollama
+OLLAMA_HOST=ollama
+OLLAMA_PORT=11434
+
+# Weaviate
+WEAVIATE_HOST=weaviate
+WEAVIATE_PORT=8080
+```
+
+### User Secrets (secrets.json)
+
+```json
+{
+  "ConnectionStrings": {
+    "AssuntoDb": "Host=localhost;Port=5432;Database=assuntos_db;Username=assunto_user;Password=assunto_pass",
+    "MovimentacaoDb": "Host=localhost;Port=5432;Database=movimentacoes_db;Username=movimentacao_user;Password=movimentacao_pass",
+    "TipoDocumentoDb": "Host=localhost;Port=5432;Database=tipos_documentos_db;Username=tipo_doc_user;Password=tipo_doc_pass"
+  }
+}
+```
+
+**Configurar User Secrets:**
+```bash
+cd NetRedisASide3
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:AssuntoDb" "Host=localhost;Port=5432;Database=assuntos_db;Username=assunto_user;Password=assunto_pass"
+dotnet user-secrets set "ConnectionStrings:MovimentacaoDb" "Host=localhost;Port=5432;Database=movimentacoes_db;Username=movimentacao_user;Password=movimentacao_pass"
+dotnet user-secrets set "ConnectionStrings:TipoDocumentoDb" "Host=localhost;Port=5432;Database=tipos_documentos_db;Username=tipo_doc_user;Password=tipo_doc_pass"
+```
+
+## Instalação e Execução
+
+### 1. Clonar e Preparar o Projeto
+
+```bash
+git clone <repository-url>
+cd NetRedisASide3
+```
+
+### 2. Configurar Variáveis de Ambiente
+
+```bash
+cp .env.example .env
+# Editar .env com suas credenciais
+```
+
+### 3. Subir Serviços com Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+Isso iniciará:
+- PostgreSQL (porta 5432)
+- Redis (porta 6379)
+- Keycloak (porta 8080)
+- Ollama com GPU NVIDIA (porta 11434)
+- Weaviate (porta 8081)
+
+### 4. Aguardar Download dos Modelos Ollama
+
+Os modelos serão baixados automaticamente:
+- llama2
+- all-minilm
+- mxbai-embed-large
+
+Acompanhe o progresso:
+```bash
+docker logs -f ollama
+```
+
+### 5. Aplicar Migrations
+
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+
+### 6. Executar a Aplicação
+
+```bash
+dotnet run
+```
+
+A aplicação estará disponível em:
+- **API**: https://localhost:7001
+- **Swagger UI**: https://localhost:7001/swagger
+
+## Endpoints da API
+
+### Autenticação
+
+Todas as APIs são protegidas via Bearer Token (JWT) obtido do Keycloak.
+
+**Obter Token:**
+```bash
+POST http://localhost:8080/realms/netredisaside3/protocol/openid-connect/token
+
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_id=netredisaside3-api
+&client_secret=your-client-secret-here
+```
+
+### Assuntos
+
+| Método | Endpoint | Descrição | Autenticação |
+|--------|----------|-----------|--------------|
+| GET | `/api/assuntos` | Lista todos os assuntos | Requerida |
+| GET | `/api/assuntos/{id}` | Busca assunto por ID | Requerida |
+| POST | `/api/assuntos` | Cria novo assunto | Requerida |
+| PUT | `/api/assuntos/{id}` | Atualiza assunto | Requerida |
+| DELETE | `/api/assuntos/{id}` | Remove assunto | Requerida |
+
+**Exemplo de Payload (POST/PUT):**
+```json
+{
+  "nome": "Arquitetura de Software",
+  "descricao": "Padrões e práticas de arquitetura de software empresarial"
+}
+```
+
+### Movimentações
+
+| Método | Endpoint | Descrição | Autenticação |
+|--------|----------|-----------|--------------|
+| GET | `/api/movimentacoes` | Lista todas as movimentações | Requerida |
+| GET | `/api/movimentacoes/{id}` | Busca movimentação por ID | Requerida |
+| POST | `/api/movimentacoes` | Cria nova movimentação | Requerida |
+| PUT | `/api/movimentacoes/{id}` | Atualiza movimentação | Requerida |
+| DELETE | `/api/movimentacoes/{id}` | Remove movimentação | Requerida |
+
+**Exemplo de Payload (POST/PUT):**
+```json
+{
+  "nome": "Transferência Interna",
+  "descricao": "Movimentação de recursos entre departamentos"
+}
+```
+
+### Tipos de Documento
+
+| Método | Endpoint | Descrição | Autenticação |
+|--------|----------|-----------|--------------|
+| GET | `/api/tipos-documento` | Lista todos os tipos | Requerida |
+| GET | `/api/tipos-documento/{id}` | Busca tipo por ID | Requerida |
+| POST | `/api/tipos-documento` | Cria novo tipo | Requerida |
+| PUT | `/api/tipos-documento/{id}` | Atualiza tipo | Requerida |
+| DELETE | `/api/tipos-documento/{id}` | Remove tipo | Requerida |
+
+**Exemplo de Payload (POST/PUT):**
+```json
+{
+  "nome": "Nota Fiscal",
+  "descricao": "Documento fiscal eletrônico modelo 55"
+}
+```
+
+### Health Checks
+
+| Endpoint | Descrição |
+|----------|-----------|
+| `/health` | Status geral da aplicação |
+| `/health/ready` | Verifica se a aplicação está pronta |
+| `/health/live` | Verifica se a aplicação está viva |
+
+**Exemplo de Resposta:**
+```json
+{
+  "status": "Healthy",
+  "totalDuration": "00:00:00.1234567",
+  "entries": {
+    "postgres": {
+      "status": "Healthy",
+      "duration": "00:00:00.0123456"
+    },
+    "redis": {
+      "status": "Healthy",
+      "duration": "00:00:00.0234567"
+    },
+    "keycloak": {
+      "status": "Healthy",
+      "duration": "00:00:00.0345678"
+    }
+  }
+}
+```
+
+## Cache Distribuído (Redis)
+
+### Estratégia de Cache
+
+A aplicação implementa o padrão **Cache-Aside** (Lazy Loading):
+
+1. **Read Through**: Ao buscar um item, verifica primeiro o cache
+2. **Write Through**: Ao criar/atualizar, invalida o cache
+3. **TTL**: Time-To-Live de 5 minutos por padrão
+
+### Chaves de Cache
+
+```
+assunto:{id}
+assuntos:all
+movimentacao:{id}
+movimentacoes:all
+tipodocumento:{id}
+tiposdocumento:all
+```
+
+### Invalidação
+
+- **Create**: Invalida lista completa
+- **Update**: Invalida item específico e lista
+- **Delete**: Invalida item específico e lista
+
+## Segurança
+
+### Autenticação e Autorização
+
+- **Provider**: Keycloak (OpenID Connect)
+- **Token Type**: JWT Bearer
+- **Token Lifetime**: 5 minutos (Access Token)
+- **Refresh Token**: 30 minutos
+
+### Proteção Implementada
+
+- ✅ HTTPS obrigatório em produção
+- ✅ CORS configurado
+- ✅ Rate Limiting
+- ✅ Validação de entrada (FluentValidation)
+- ✅ SQL Injection (via EF Core parametrizado)
+- ✅ Secrets não commitados (User Secrets)
+- ✅ Logs sem dados sensíveis
+
+### OWASP Top 10 Mitigações
+
+| Vulnerabilidade | Mitigação |
+|-----------------|-----------|
+| A01:2021 – Broken Access Control | Keycloak + Authorization Policies |
+| A02:2021 – Cryptographic Failures | HTTPS + Secrets Management |
+| A03:2021 – Injection | EF Core Parametrizado + FluentValidation |
+| A04:2021 – Insecure Design | Clean Architecture + SOLID |
+| A05:2021 – Security Misconfiguration | Docker Secrets + .env |
+| A07:2021 – Authentication Failures | Keycloak OAuth 2.0 |
+
+## Monitoramento
+
+### Health Checks
+
+A aplicação expõe health checks para:
+- PostgreSQL (conectividade)
+- Redis (conectividade)
+- Keycloak (disponibilidade)
+- Ollama (disponibilidade)
+- Weaviate (disponibilidade)
+
+### Logs
+
+Logs estruturados com níveis:
+- **Information**: Operações normais
+- **Warning**: Situações inesperadas não críticas
+- **Error**: Erros que requerem atenção
+
+## Testes
+
+### Testes via Postman
+
+Importar a collection `NetRedisASide3.postman_collection.json`
+
+**Estrutura:**
+```
+NetRedisASide3/
+├── Authentication/
+│   └── Get Token
+├── Assuntos/
+│   ├── List All
+│   ├── Get By Id
+│   ├── Create
+│   ├── Update
+│   └── Delete
+├── Movimentações/
+│   ├── List All
+│   ├── Get By Id
+│   ├── Create
+│   ├── Update
+│   └── Delete
+├── Tipos de Documento/
+│   ├── List All
+│   ├── Get By Id
+│   ├── Create
+│   ├── Update
+│   └── Delete
+└── Health Checks/
+    ├── Health
+    ├── Ready
+    └── Live
+```
+
+### Variáveis do Postman
+
+```json
+{
+  "base_url": "https://localhost:7001",
+  "keycloak_url": "http://localhost:8080",
+  "realm": "netredisaside3",
+  "client_id": "netredisaside3-api",
+  "client_secret": "your-client-secret-here",
+  "access_token": "{{access_token}}"
+}
+```
+
+## Integração com IA
+
+### Ollama
+
+Modelos disponíveis localmente:
+- **llama2**: LLM para geração de texto
+- **all-minilm**: Embeddings leves
+- **mxbai-embed-large**: Embeddings de alta qualidade
+
+**Exemplo de uso:**
+```bash
+curl http://localhost:11434/api/generate -d '{
+  "model": "llama2",
+  "prompt": "Explique o que é Clean Architecture",
+  "stream": false
+}'
+```
+
+### Weaviate
+
+Banco vetorial configurado com:
+- **Vectorizer**: text2vec-ollama
+- **Generative**: generative-ollama
+- **Modelo**: all-minilm
+
+**Exemplo de schema:**
+```json
+{
+  "class": "Documento",
+  "vectorizer": "text2vec-ollama",
+  "moduleConfig": {
+    "text2vec-ollama": {
+      "model": "all-minilm"
+    }
+  },
+  "properties": [
+    {
+      "name": "titulo",
+      "dataType": ["string"]
+    },
+    {
+      "name": "conteudo",
+      "dataType": ["text"]
+    }
+  ]
+}
+```
+
+## Troubleshooting
+
+### Problema: Ollama não baixa modelos
+
+**Solução:**
+```bash
+docker exec -it ollama bash
+ollama pull llama2
+ollama pull all-minilm
+ollama pull mxbai-embed-large
+```
+
+### Problema: Keycloak não importa realm
+
+**Solução:**
+```bash
+docker-compose down
+docker volume rm netredisaside3_keycloak_data
+docker-compose up -d
+```
+
+### Problema: Erro de conexão com PostgreSQL
+
+**Solução:**
+Verificar se os databases foram criados:
+```bash
+docker exec -it postgres psql -U postgres -c "\l"
+```
+
+### Problema: GPU não detectada no Ollama
+
+**Solução:**
+Verificar instalação do NVIDIA Docker:
+```bash
+docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+```
+
+## Performance
+
+### Benchmarks Esperados
+
+- **GET (com cache)**: < 10ms
+- **GET (sem cache)**: < 50ms
+- **POST/PUT**: < 100ms
+- **DELETE**: < 50ms
+
+### Otimizações Implementadas
+
+- ✅ Async/Await em todas operações I/O
+- ✅ Connection pooling (EF Core)
+- ✅ Redis para cache distribuído
+- ✅ Queries otimizadas (sem N+1)
+- ✅ DTOs para reduzir payload
+
+## Roadmap
+
+### Próximas Features
+
+- [ ] Paginação nas listagens
+- [ ] Filtros e ordenação avançados
+- [ ] Rate limiting por usuário
+- [ ] Auditoria completa (quem/quando)
+- [ ] Exportação de dados (CSV, Excel)
+- [ ] Notificações via SignalR
+- [ ] Background jobs (Hangfire)
+- [ ] Métricas com Prometheus
+- [ ] Tracing distribuído (OpenTelemetry)
+
+## Contribuição
+
+### Padrões de Código
+
+- Seguir convenções C# (.NET)
+- Usar nullable reference types
+- Aplicar SOLID principles
+- Escrever testes unitários
+- Documentar APIs públicas
+
+### Git Workflow
+
+```bash
+git checkout -b feature/nova-funcionalidade
+# Desenvolver
+git commit -m "feat: adiciona nova funcionalidade"
+git push origin feature/nova-funcionalidade
+# Abrir Pull Request
+```
+
+## Licença
+
+[MIT License](LICENSE)
+
+## Suporte
+
+- **Documentação**: [Wiki do Projeto](https://github.com/seu-usuario/netredisaside3/wiki)
+- **Issues**: [GitHub Issues](https://github.com/seu-usuario/netredisaside3/issues)
+- **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/netredisaside3/discussions)
+
+---
+
+**Desenvolvido com ❤️ usando .NET 9**

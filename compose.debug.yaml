@@ -1,0 +1,16 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
+
+services:
+  netredisaside3:
+    image: netredisaside3
+    build:
+      context: .
+      dockerfile: NetRedisASide3/Dockerfile
+      args:
+        - configuration=Debug
+    ports:
+      - 5026:5026
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ~/.vsdbg:/remote_debugger:rw
